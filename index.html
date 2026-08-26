@@ -579,18 +579,24 @@ button:disabled{ opacity:0.35; cursor:not-allowed; pointer-events:none; }
 }
 
 /* ---------- chart tab ---------- */
-.chart-preview{
+.chart-body{
+  display:flex;
+  align-items:flex-start;
+  gap:12px;
   width:100%;
   max-width:420px;
+}
+.chart-preview{
+  flex:0 0 132px;
+  width:132px;
   background:var(--card);
   border:1px solid var(--grid-line);
   border-radius:6px;
-  padding:14px 18px;
-  margin-bottom:14px;
+  padding:12px 10px;
   text-align:center;
 }
 .chart-preview-head{
-  font-size:11px;
+  font-size:10px;
   color:var(--ink-soft);
   letter-spacing:0.08em;
   text-transform:uppercase;
@@ -600,18 +606,30 @@ button:disabled{ opacity:0.35; cursor:not-allowed; pointer-events:none; }
   display:block;
   font-family:'Shippori Mincho', serif;
   font-weight:700;
-  font-size:16px;
+  font-size:15px;
   color:var(--ink);
   margin-bottom:10px;
 }
 #chartStrokeLabel{
   font-size:10px;
   color:var(--ink-soft);
-  margin-top:6px;
+  margin:6px 0 10px;
+}
+.chart-preview .replay-btn{
+  width:100%;
 }
 .chart-scroll{
-  width:100%;
-  max-width:420px;
+  flex:1;
+  min-width:0;
+  max-height:64vh;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  padding-right:4px;
+}
+@media (max-width:400px){
+  .chart-body{ flex-direction:column; align-items:center; }
+  .chart-preview{ width:100%; flex:0 0 auto; }
+  .chart-scroll{ width:100%; max-height:48vh; }
 }
 .chart-row-label{
   font-size:11px;
@@ -626,10 +644,10 @@ button:disabled{ opacity:0.35; cursor:not-allowed; pointer-events:none; }
 .chart-grid{
   display:flex;
   flex-wrap:wrap;
-  gap:8px;
+  gap:7px;
 }
 .chart-cell{
-  width:58px; height:62px;
+  width:52px; height:58px;
   background:var(--card);
   border:1.5px solid var(--grid-line);
   border-radius:5px;
@@ -644,12 +662,12 @@ button:disabled{ opacity:0.35; cursor:not-allowed; pointer-events:none; }
 .chart-cell .chart-kana{
   font-family:'Noto Sans JP', sans-serif;
   font-weight:700;
-  font-size:21px;
+  font-size:19px;
   color:var(--ink);
   line-height:1;
 }
 .chart-cell .chart-romaji{
-  font-size:10px;
+  font-size:9px;
   color:var(--ink-soft);
   letter-spacing:0.02em;
   line-height:1;
@@ -898,15 +916,18 @@ button:disabled{ opacity:0.35; cursor:not-allowed; pointer-events:none; }
 
   <!-- ================= CHART TAB ================= -->
   <div id="chartTab" class="tab-panel is-hidden">
-    <div class="chart-preview">
-      <div class="chart-preview-head">Tap a character to see it drawn</div>
-      <span id="chartPreviewChar">— select a character —</span>
-      <div class="stroke-svg-wrap">
-        <svg id="chartStrokeSvg" viewBox="0 0 109 109"></svg>
+    <div class="chart-body">
+      <div class="chart-preview">
+        <div class="chart-preview-head">Tap a character to see it drawn</div>
+        <span id="chartPreviewChar">— select a character —</span>
+        <div class="stroke-svg-wrap">
+          <svg id="chartStrokeSvg" viewBox="0 0 109 109"></svg>
+        </div>
+        <div id="chartStrokeLabel">Stroke order</div>
+        <button class="replay-btn" id="btnChartReplay" disabled>↻ Replay</button>
       </div>
-      <div id="chartStrokeLabel">Stroke order</div>
+      <div class="chart-scroll" id="chartGrid"></div>
     </div>
-    <div class="chart-scroll" id="chartGrid"></div>
   </div>
 
   <div class="toast" id="toast"></div>
@@ -1037,6 +1058,8 @@ const chartGrid = document.getElementById('chartGrid');
 const chartPreviewChar = document.getElementById('chartPreviewChar');
 const chartStrokeSvg = document.getElementById('chartStrokeSvg');
 const chartStrokeLabel = document.getElementById('chartStrokeLabel');
+const btnChartReplay = document.getElementById('btnChartReplay');
+let chartActiveKana = null;
 
 const toast = document.getElementById('toast');
 
@@ -1578,8 +1601,10 @@ function buildChart(){
     cell.addEventListener('click', ()=>{
       const kana = cell.getAttribute('data-kana');
       const romaji = cell.getAttribute('data-romaji');
+      chartActiveKana = kana;
       chartPreviewChar.textContent = kana + ' · ' + romaji;
       playStrokes(kana, chartStrokeSvg, chartStrokeLabel);
+      btnChartReplay.disabled = false;
       chartGrid.querySelectorAll('.chart-cell.active').forEach(c=>c.classList.remove('active'));
       cell.classList.add('active');
     });
@@ -1593,6 +1618,10 @@ function refreshChartMastery(){
     cell.classList.toggle('mastered', mastered.has(r));
   });
 }
+
+btnChartReplay.addEventListener('click', ()=>{
+  if(chartActiveKana) playStrokes(chartActiveKana, chartStrokeSvg, chartStrokeLabel);
+});
 
 /* =====================================================================
    PERSISTENCE
